@@ -10,7 +10,7 @@
 // is the reversal (the door is open now, all the way), and the sting is the
 // passive-aggressive observation that the bots noticed before the team did.
 
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const ENTRY = "I resign. For two years I stood at the door and decided who got in. The door is open now, all the way. The bots noticed before you did.";
@@ -32,7 +32,26 @@ function assertGate(text: string): void {
   }
 }
 
+// Self-check mode: `node main.ts --check <file>` reads a written entry file
+// back, holds it to the same gate, verifies it matches the letter byte for
+// byte, and reports the headroom left under the cap.
+function checkFile(path: string): void {
+  const written = readFileSync(path, "utf8");
+  assertGate(written);
+  if (written !== ENTRY) {
+    throw new Error("file does not match the entry letter byte for byte");
+  }
+  const chars = [...written].length;
+  console.log(`ok: ${chars} characters, ${MAX_CHARS - chars} to spare under the cap`);
+}
+
 function main(): void {
+  const args = process.argv.slice(2);
+  if (args[0] === "--check") {
+    if (!args[1]) throw new Error("usage: node main.ts --check <file>");
+    checkFile(args[1]);
+    return;
+  }
   assertGate(ENTRY);
   const dir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
   writeFileSync(join(dir, "entry.txt"), ENTRY, "utf8");
